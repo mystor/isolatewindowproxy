@@ -24,6 +24,14 @@ I don't know yet whether a reload or history navigation load of a `<meta name=is
 
 My current prototype for `<meta name=freshprocess>` (bug 1277066) uses very similar semantics to this.
 
+### ALTERNATIVE: X-IsolateWindowProxy-like HTTP Header
+
+Another option would be to, instead of using a `<meta>` tag, use an HTTP header. The advantage of this is the information that the incoming load should be an `isolatewindowproxy` load would arrive before the environment had already been set up within the old window proxy. The disadvantage is that it would require people to have control over their HTTP headers in order to opt into this form of navigation.
+
+There are forms of navigation, especially with games on gaming websites, or on shared hosting, where developers don't have control over the HTTP headers which are sent as part of the response, but do have control over the HTTP content. One of the desired use cases for this feature would be for games to be able to isolate themselves within their own process. Many game hosting websites don't allow control over the HTTP headers, but adding a <meta> tag would be easy. This is why it was considered initially.
+
+With the <meta> tag, the load has to be canceled and restarted within the new WindowProxy, which wouldn't have to be the case for the HTTP header, which is a serious advantage.
+
 ## Notes about interactions with iframes
 
 If a isolatewindowproxy navigation was to occur within an iframe, the iframe's contentWindow would continue to be a reference to the original WindowProxy created when the iframe was created, rather than the WindowProxy which is currently within the iframe, and actually being rendered. This would allow for a page inside an iframe to opt itself into being rendered out of process, and sandboxed from its inclosing webpage, which could be nice.
