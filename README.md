@@ -1,16 +1,16 @@
 # Isolating Window Proxies - a pre-proposal
 
-NOTE: I don't know that much about what terms to use for this document, which means that I will use the wrong or inappropriate terms frequently. 
+NOTE: I don't know that much about what terms to use for this document, which means that I will use the wrong or inappropriate terms frequently.
 
-The idea is that the concept of the WindowProxy and the concept of a "Physical Window" (e.g. a tab within a web browser, or an iframe), and the history which comes with it, should not be tied together. We would like to provide some way for a website to perform navigation within the current physical window, but with a fresh window proxy which is unattached to any other windows. 
+The idea is that the concept of the WindowProxy and the concept of a Browsing Context, and the history which comes with it, should not be tied together. We would like to provide some way for a website to perform navigation within the current browsing context, but with a fresh window proxy which is unattached to any other windows.
 
-This would allow us to perform the navigation in a different process than the original navigation, as the webpage should be guaranteed to be disconnected from any other webpages. 
+This would allow us to perform the navigation in a different process than the original navigation, as the webpage should be guaranteed to be disconnected from any other webpages.
 
 I've talked with Luke a bit about this, and we have a proposal for how this could be implemented and how it would interact with history. However, it is almost certainly flawed. We are looking for feedback as to what would need to change before this can be turned into an actual proposal for the HTML spec, or input as to why this is not a good idea :).
 
 ## History outside of a window proxy
 
-This would lift the location where back-forward history is recorded into a Physical Window. Effectively, history would be devided into chunks. Each chunk of history would have a WindowProxy which represents it. WindowProxies which no longer have references to them do not need to be kept alive by the history, and can be discarded, and re-created lazily when required. When navigating backwards or forwards between chunks, the WindowProxy used by the Physical Window would be changed to the WindowProxy for that chunk, and the load would occur within that WindowProxy.
+This would lift the location where back-forward history is recorded into a Browsing Context. Effectively, history would be devided into chunks. Each chunk of history would have a WindowProxy which represents it. WindowProxies which no longer have references to them do not need to be kept alive by the history, and can be discarded, and re-created lazily when required. When navigating backwards or forwards between chunks, the WindowProxy used by the browsing context would be changed to the WindowProxy for that chunk, and the load would occur within that WindowProxy.
 
 ## `<a rel=isolatewindowproxy>`
 
@@ -18,7 +18,7 @@ This would be exposed to web content through a new rel attribute, currently stra
 
 ## `<meta name=isolatewindowproxy>`
 
-Another option would be to expose this to web content through a meta tag. When a page with this meta tag is loaded, a check would be made to see if the current window proxy is "independent", An independent window proxy is a window proxy which has no other references to it, other than the current window. This could happen if the window proxy was the first page loaded in the tab, or if it was navigated to with isolatewindowproxy. If it was not, the current load would be canceled, and be replaced with a isolatewindowproxy load. This will cause the page to be loaded with an independent window proxy. Any navigations away from this page will be treated as isolatewindowproxy navigations, and cause a new window proxy to be created, to keep this page's window proxy isolated from other pages' window proxies.
+Another option would be to expose this to web content through a meta tag. When a page with this meta tag is loaded, a check would be made to see if the current window proxy is "independent", An independent window proxy is a window proxy which has no other references to it, other than the current window. This could happen if the window proxy was the first page loaded in the browsing context, or if it was navigated to with isolatewindowproxy. If it was not, the current load would be canceled, and be replaced with a isolatewindowproxy load. This will cause the page to be loaded with an independent window proxy. Any navigations away from this page will be treated as isolatewindowproxy navigations, and cause a new window proxy to be created, to keep this page's window proxy isolated from other pages' window proxies.
 
 I don't know yet whether a reload or history navigation load of a `<meta name=isolatewindowproxy>` page should trigger an isolation of the window proxy again. This is relevant because the page could open new windows with window.open, which would have a reference to the old window proxy, and when the page is loaded, it would technically not be "independent" anymore, as another document has a reference to it.
 
@@ -28,7 +28,7 @@ My current prototype for `<meta name=freshprocess>` (bug 1277066) uses very simi
 
 If a isolatewindowproxy navigation was to occur within an iframe, the iframe's contentWindow would continue to be a reference to the original WindowProxy created when the iframe was created, rather than the WindowProxy which is currently within the iframe, and actually being rendered. This would allow for a page inside an iframe to opt itself into being rendered out of process, and sandboxed from its inclosing webpage, which could be nice.
 
-On the other hand, we could also prevent this, and only allow freshProcess within toplevel windows, if we decided that this behavior was undesirable.
+On the other hand, we could also prevent this, and only allow freshProcess within toplevel browsing contexts, if we decided that this behavior was undesirable.
 
 ## Open Questions
 
